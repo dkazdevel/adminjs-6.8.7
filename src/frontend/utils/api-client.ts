@@ -218,8 +218,8 @@ class ApiClient {
    */
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
-    const method =  data ? 'POST' : 'GET'
-    if (method === 'POST') {
+    const method =  axiosParams.method?.toUpperCase() || data ? 'POST' : 'GET'
+    if (axiosParams.method?.toUpperCase() === 'POST' || method === 'POST') {
       const csrfToken: CsrfTokenInterface = (await this.getToken());
       (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = csrfToken.sk;
     }
