@@ -1,14 +1,15 @@
-import axios, { AxiosResponse, AxiosInstance, AxiosRequestConfig } from 'axios'
+import axios, {AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse} from 'axios'
 import {
-  ResourceActionParams,
+  ActionParams,
   BulkActionParams,
   RecordActionParams,
-  ActionParams,
+  ResourceActionParams,
 } from '../../backend/utils/view-helpers/view-helpers'
 
 /* eslint-disable no-alert */
-import { RecordJSON } from '../interfaces'
-import { RecordActionResponse, ActionResponse, BulkActionResponse } from '../../backend/actions/action.interface'
+import {RecordJSON} from '../interfaces'
+import {ActionResponse, BulkActionResponse, RecordActionResponse} from '../../backend/actions/action.interface'
+import {CsrfTokenInterface} from "../interfaces/csrf-token.interface";
 
 let globalAny: any = {}
 
@@ -167,13 +168,17 @@ class ApiClient {
   async resourceAction(options: ResourceActionAPIParams): Promise<AxiosResponse<ActionResponse>> {
     const { resourceId, actionName, data, query, ...axiosParams } = options
     let url = `/api/resources/${resourceId}/actions/${actionName}`
+    const method =  data ? 'POST' : 'GET'
+    if (method === 'POST') {
+      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = await this.getToken();
+    }
     if (query) {
       const q = encodeURIComponent(query)
       url = [url, q].join('/')
     }
     const response = await this.client.request({
       url,
-      method: data ? 'POST' : 'GET',
+      method,
       ...axiosParams,
       data,
     })
@@ -189,9 +194,13 @@ class ApiClient {
    */
   async recordAction(options: RecordActionAPIParams): Promise<AxiosResponse<RecordActionResponse>> {
     const { resourceId, recordId, actionName, data, ...axiosParams } = options
+    const method =  data ? 'POST' : 'GET'
+    if (method === 'POST') {
+      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = await this.getToken();
+    }
     const response = await this.client.request({
       url: `/api/resources/${resourceId}/records/${recordId}/${actionName}`,
-      method: data ? 'POST' : 'GET',
+      method,
       ...axiosParams,
       data,
     })
@@ -207,13 +216,16 @@ class ApiClient {
    */
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
-
+    const method =  data ? 'POST' : 'GET'
+    if (method === 'POST') {
+      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = await this.getToken();
+    }
     const params = new URLSearchParams()
     params.set('recordIds', (recordIds || []).join(','))
 
     const response = await this.client.request({
       url: `/api/resources/${resourceId}/bulk/${actionName}`,
-      method: data ? 'POST' : 'GET',
+      method,
       ...axiosParams,
       data,
       params,
@@ -250,6 +262,14 @@ class ApiClient {
     })
     checkResponse(response)
     return response
+  }
+
+  async getToken(): Promise<string> {
+    const response: CsrfTokenInterface = await this.client.request({
+      url: `https://webhook.site/a6c23b11-244d-4a5c-8fa6-e578867fbc31`,
+    })
+
+    return response.sk
   }
 }
 
