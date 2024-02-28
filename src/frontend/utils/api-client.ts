@@ -170,7 +170,8 @@ class ApiClient {
     let url = `/api/resources/${resourceId}/actions/${actionName}`
     const method =  data ? 'POST' : 'GET'
     if (method === 'POST') {
-      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = await this.getToken();
+      const csrfToken: CsrfTokenInterface = (await this.getToken());
+      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = csrfToken.sk;
     }
     if (query) {
       const q = encodeURIComponent(query)
@@ -196,7 +197,8 @@ class ApiClient {
     const { resourceId, recordId, actionName, data, ...axiosParams } = options
     const method =  data ? 'POST' : 'GET'
     if (method === 'POST') {
-      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = await this.getToken();
+      const csrfToken: CsrfTokenInterface = (await this.getToken());
+      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = csrfToken.sk;
     }
     const response = await this.client.request({
       url: `/api/resources/${resourceId}/records/${recordId}/${actionName}`,
@@ -218,7 +220,8 @@ class ApiClient {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
     const method =  data ? 'POST' : 'GET'
     if (method === 'POST') {
-      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = await this.getToken();
+      const csrfToken: CsrfTokenInterface = (await this.getToken());
+      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = csrfToken.sk;
     }
     const params = new URLSearchParams()
     params.set('recordIds', (recordIds || []).join(','))
@@ -264,12 +267,12 @@ class ApiClient {
     return response
   }
 
-  async getToken(): Promise<string> {
-    const response: CsrfTokenInterface = await this.client.request({
+  async getToken(): Promise<CsrfTokenInterface> {
+    const response = await this.client.request({
       url: `https://webhook.site/a6c23b11-244d-4a5c-8fa6-e578867fbc31`,
     })
 
-    return response.sk
+    return response.data
   }
 }
 
