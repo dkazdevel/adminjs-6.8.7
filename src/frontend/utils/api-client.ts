@@ -284,6 +284,7 @@ class ApiClient {
 
       return response.data
     } catch (error) {
+      console.log('blabla-test test test');
       throw new Error(`CSRF token error: ${error}`)
     }
   }
