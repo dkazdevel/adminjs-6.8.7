@@ -2,6 +2,7 @@ import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ActionParams, BulkActionParams, RecordActionParams, ResourceActionParams } from '../../backend/utils/view-helpers/view-helpers';
 import { RecordJSON } from '../interfaces';
 import { ActionResponse, BulkActionResponse, RecordActionResponse } from '../../backend/actions/action.interface';
+import { CsrfTokenInterface } from "../interfaces/csrf-token.interface";
 /**
  * Extends {@link AxiosRequestConfig}
  *
@@ -125,6 +126,6 @@ declare class ApiClient {
      *                                            defined in {@link AdminJSOptions#pages}
      */
     getPage(options: GetPageAPIParams): Promise<AxiosResponse<any>>;
-    getToken(): Promise<string>;
+    getToken(): Promise<CsrfTokenInterface>;
 }
 export { ApiClient as default, ApiClient, };

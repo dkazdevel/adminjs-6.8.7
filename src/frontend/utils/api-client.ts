@@ -224,10 +224,9 @@ class ApiClient {
    */
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
-    const method =  axiosParams.method?.toUpperCase() || data ? 'POST' : 'GET'
-    if (axiosParams.method?.toUpperCase() === 'POST' || method === 'POST') {
+    const method =  axiosParams.method || data ? 'POST' : 'GET'
+    if (method.toUpperCase() === 'POST') {
       const csrfToken: CsrfTokenInterface = (await this.getToken());
-
       axiosParams.headers = {
         ... axiosParams.headers,
         ['X-Csrf-Token']: csrfToken.sk
@@ -280,14 +279,13 @@ class ApiClient {
   async getToken(): Promise<CsrfTokenInterface> {
     try {
       const response = await this.client.request({
-        url: `https://webhook.site/a6c23b11-244d-4a5c-8fa6-e578867fbc31`,
+        url: `/csrf_token`,
       })
 
       return response.data
     } catch (error) {
-      throw new Error(`error while getting token: ${error}`)
+      throw new Error(`CSRF token error: ${error}`)
     }
-
   }
 }
 
