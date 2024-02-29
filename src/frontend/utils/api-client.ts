@@ -170,8 +170,11 @@ class ApiClient {
     let url = `/api/resources/${resourceId}/actions/${actionName}`
     const method =  data ? 'POST' : 'GET'
     if (method === 'POST') {
-      const csrfToken: CsrfTokenInterface = (await this.getToken());
-      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = csrfToken.sk;
+      const csrfToken: CsrfTokenInterface  = (await this.getToken());
+      axiosParams.headers = {
+        ... axiosParams.headers,
+        ['X-Csrf-Token']: csrfToken.sk
+      };
     }
     if (query) {
       const q = encodeURIComponent(query)
@@ -198,7 +201,10 @@ class ApiClient {
     const method =  data ? 'POST' : 'GET'
     if (method === 'POST') {
       const csrfToken: CsrfTokenInterface = (await this.getToken());
-      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = csrfToken.sk;
+      axiosParams.headers = {
+        ... axiosParams.headers,
+        ['X-Csrf-Token']: csrfToken.sk
+      };
     }
     const response = await this.client.request({
       url: `/api/resources/${resourceId}/records/${recordId}/${actionName}`,
@@ -221,7 +227,11 @@ class ApiClient {
     const method =  axiosParams.method?.toUpperCase() || data ? 'POST' : 'GET'
     if (axiosParams.method?.toUpperCase() === 'POST' || method === 'POST') {
       const csrfToken: CsrfTokenInterface = (await this.getToken());
-      (axiosParams.headers as AxiosRequestHeaders)['X-Csrf-Token'] = csrfToken.sk;
+
+      axiosParams.headers = {
+        ... axiosParams.headers,
+        ['X-Csrf-Token']: csrfToken.sk
+      };
     }
     const params = new URLSearchParams()
     params.set('recordIds', (recordIds || []).join(','))
@@ -268,11 +278,16 @@ class ApiClient {
   }
 
   async getToken(): Promise<CsrfTokenInterface> {
-    const response = await this.client.request({
-      url: `https://webhook.site/a6c23b11-244d-4a5c-8fa6-e578867fbc31`,
-    })
+    try {
+      const response = await this.client.request({
+        url: `https://webhook.site/a6c23b11-244d-4a5c-8fa6-e578867fbc31`,
+      })
 
-    return response.data
+      return response.data
+    } catch (error) {
+      throw new Error(`error while getting token: ${error}`)
+    }
+
   }
 }
 
