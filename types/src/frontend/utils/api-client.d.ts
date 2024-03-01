@@ -2,7 +2,6 @@ import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ActionParams, BulkActionParams, RecordActionParams, ResourceActionParams } from '../../backend/utils/view-helpers/view-helpers';
 import { RecordJSON } from '../interfaces';
 import { ActionResponse, BulkActionResponse, RecordActionResponse } from '../../backend/actions/action.interface';
-import { CsrfTokenInterface } from '../interfaces/csrf-token.interface';
 /**
  * Extends {@link AxiosRequestConfig}
  *
@@ -50,6 +49,11 @@ export declare type GetPageAPIParams = AxiosRequestConfig & {
      * Unique page name
      */
     pageName: string;
+};
+declare type CookieOptions = {
+    path?: string;
+    expires?: Date | string;
+    'max-age'?: number;
 };
 /**
  * Client which access the admin API.
@@ -127,6 +131,8 @@ declare class ApiClient {
      *                                            defined in {@link AdminJSOptions#pages}
      */
     getPage(options: GetPageAPIParams): Promise<AxiosResponse<any>>;
-    getToken(): Promise<CsrfTokenInterface>;
+    getToken(): Promise<string>;
+    getCookie(name: string): string | undefined;
+    setCookie(name: string, value: string, options?: CookieOptions): void;
 }
 export { ApiClient as default, ApiClient, };
