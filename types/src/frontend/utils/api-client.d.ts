@@ -77,7 +77,6 @@ declare class ApiClient {
     private baseURL;
     private client;
     private csrfClient;
-    private isCsrfMode;
     constructor();
     static getBaseUrl(): string;
     /**
