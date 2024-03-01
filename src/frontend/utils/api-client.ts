@@ -10,8 +10,6 @@ import {
 import { RecordJSON } from '../interfaces'
 import { ActionResponse, BulkActionResponse, RecordActionResponse } from '../../backend/actions/action.interface'
 import { CsrfTokenInterface } from '../interfaces/csrf-token.interface'
-import Adminjs from "../../adminjs";
-import AdminJS from "../../adminjs";
 
 let globalAny: any = {}
 
@@ -236,9 +234,7 @@ class ApiClient {
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
     const method = axiosParams.method || data ? 'POST' : 'GET'
-console.log('process.env?.IS_CSRF_MODE ' + process.env?.IS_CSRF_MODE)
-    console.log('process ' + process)
-    console.log('process.env ' + process.env)
+
     if (method.toUpperCase() === 'POST') {
       const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
