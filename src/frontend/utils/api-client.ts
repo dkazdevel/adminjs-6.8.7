@@ -128,15 +128,12 @@ class ApiClient {
 
   private csrfClient: AxiosInstance
 
-  private isCsrfMode: boolean;
-
   constructor() {
     this.baseURL = ApiClient.getBaseUrl()
     this.client = axios.create({
       baseURL: this.baseURL,
     })
     this.csrfClient = axios.create({ baseURL: '/csrf_token' })
-    this.isCsrfMode = /true/i.test(process.env.IS_CSRF_MODE || 'true')
   }
 
   static getBaseUrl(): string {
@@ -181,7 +178,7 @@ class ApiClient {
     const { resourceId, actionName, data, query, ...axiosParams } = options
     let url = `/api/resources/${resourceId}/actions/${actionName}`
     const method = data ? 'POST' : 'GET'
-    if (this.isCsrfMode && method === 'POST') {
+    if (method === 'POST') {
       const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
@@ -211,7 +208,7 @@ class ApiClient {
   async recordAction(options: RecordActionAPIParams): Promise<AxiosResponse<RecordActionResponse>> {
     const { resourceId, recordId, actionName, data, ...axiosParams } = options
     const method = data ? 'POST' : 'GET'
-    if (this.isCsrfMode && method === 'POST') {
+    if (method === 'POST') {
       const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
@@ -237,8 +234,8 @@ class ApiClient {
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
     const method = axiosParams.method || data ? 'POST' : 'GET'
-    console.log('this.isCsrfMode ' + this.isCsrfMode)
-    if (this.isCsrfMode && method.toUpperCase() === 'POST') {
+
+    if (method.toUpperCase() === 'POST') {
       const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
@@ -290,47 +287,47 @@ class ApiClient {
   }
 
   async getToken(): Promise<string> {
-    const tokenFromCookie = this.getCookie('sk');
+    const tokenFromCookie = this.getCookie('sk')
     if (tokenFromCookie) return tokenFromCookie
 
     try {
       const response = await this.csrfClient.get('')
 
-      const csrfTokenResponse: CsrfTokenInterface = response.data;
-      this.setCookie('sk', csrfTokenResponse.sk, {"max-age": csrfTokenResponse["max-age-seconds"]});
-      return csrfTokenResponse.sk;
+      const csrfTokenResponse: CsrfTokenInterface = response.data
+      this.setCookie('sk', csrfTokenResponse.sk, { 'max-age': csrfTokenResponse['max-age-seconds'] })
+      return csrfTokenResponse.sk
     } catch (error) {
       throw new Error(`CSRF token error: ${error}`)
     }
   }
 
-   getCookie(name: string): string | undefined {
-    let matches = document.cookie.match(new RegExp(
-        "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
-    ));
-    return matches ? decodeURIComponent(matches[1]) : undefined;
+  getCookie(name: string): string | undefined {
+    const matches = document.cookie.match(new RegExp(
+      `(?:^|; )${name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1')}=([^;]*)`,
+    ))
+    return matches ? decodeURIComponent(matches[1]) : undefined
   }
 
   setCookie(name: string, value: string, options: CookieOptions = {}) {
     options = {
       path: '/',
-      ...options
-    };
-
-    if (options.expires instanceof Date) {
-      options.expires = options.expires.toUTCString();
+      ...options,
     }
 
-    let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
-    for (let optionKey in options) {
-      updatedCookie += "; " + optionKey;
-      let optionValue = options[optionKey];
+    if (options.expires instanceof Date) {
+      options.expires = options.expires.toUTCString()
+    }
+
+    let updatedCookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`
+    for (const optionKey in options) {
+      updatedCookie += `; ${optionKey}`
+      const optionValue = options[optionKey]
       if (optionValue !== true) {
-        updatedCookie += "=" + optionValue;
+        updatedCookie += `=${optionValue}`
       }
     }
 
-    document.cookie = updatedCookie;
+    document.cookie = updatedCookie
   }
 }
 
