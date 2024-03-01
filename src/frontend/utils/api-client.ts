@@ -97,6 +97,12 @@ export type GetPageAPIParams = AxiosRequestConfig & {
   pageName: string;
 }
 
+type CookieOptions = {
+  path?: string;
+  expires?: Date | string;
+  'max-age'?: number;
+}
+
 /**
  * Client which access the admin API.
  * Use it to fetch data from auto generated AdminJS API.
@@ -173,10 +179,10 @@ class ApiClient {
     let url = `/api/resources/${resourceId}/actions/${actionName}`
     const method = data ? 'POST' : 'GET'
     if (method === 'POST') {
-      const csrfToken: CsrfTokenInterface = (await this.getToken())
+      const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
-        'X-Csrf-Token': csrfToken.sk,
+        'X-Csrf-Token': csrfToken,
       }
     }
     if (query) {
@@ -203,10 +209,10 @@ class ApiClient {
     const { resourceId, recordId, actionName, data, ...axiosParams } = options
     const method = data ? 'POST' : 'GET'
     if (method === 'POST') {
-      const csrfToken: CsrfTokenInterface = (await this.getToken())
+      const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
-        'X-Csrf-Token': csrfToken.sk,
+        'X-Csrf-Token': csrfToken,
       }
     }
     const response = await this.client.request({
@@ -229,10 +235,10 @@ class ApiClient {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
     const method = axiosParams.method || data ? 'POST' : 'GET'
     if (method.toUpperCase() === 'POST') {
-      const csrfToken: CsrfTokenInterface = (await this.getToken())
+      const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
-        'X-Csrf-Token': csrfToken.sk,
+        'X-Csrf-Token': csrfToken,
       }
     }
     const params = new URLSearchParams()
@@ -279,14 +285,52 @@ class ApiClient {
     return response
   }
 
-  async getToken(): Promise<CsrfTokenInterface> {
+  async getToken(): Promise<string> {
+    const tokenFromCookie = this.getCookie('sk');
+    console.log('tokenFromCookie ' + tokenFromCookie);
+    if (tokenFromCookie) return tokenFromCookie
+
     try {
       const response = await this.csrfClient.get('')
 
-      return response.data
+      const csrfTokenResponse: CsrfTokenInterface = response.data;
+      this.setCookie('sk', csrfTokenResponse.sk, {"max-age": csrfTokenResponse["max-age-seconds"]});
+      console.log('got new token, set token ' + document.cookie);
+      return csrfTokenResponse.sk;
     } catch (error) {
       throw new Error(`CSRF token error: ${error}`)
     }
+  }
+
+   getCookie(name: string): string | undefined {
+    let matches = document.cookie.match(new RegExp(
+        "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+    ));
+    return matches ? decodeURIComponent(matches[1]) : undefined;
+  }
+
+  setCookie(name: string, value: string, options: CookieOptions = {}) {
+
+    options = {
+      path: '/',
+      ...options
+    };
+
+    if (options.expires instanceof Date) {
+      options.expires = options.expires.toUTCString();
+    }
+
+    let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+
+    for (let optionKey in options) {
+      updatedCookie += "; " + optionKey;
+      let optionValue = options[optionKey];
+      if (optionValue !== true) {
+        updatedCookie += "=" + optionValue;
+      }
+    }
+
+    document.cookie = updatedCookie;
   }
 }
 
