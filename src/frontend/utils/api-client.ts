@@ -294,6 +294,7 @@ class ApiClient {
       const response = await this.csrfClient.get('')
 
       const csrfTokenResponse: CsrfTokenInterface = response.data;
+      console.log('csrfTokenResponse ' + csrfTokenResponse);
       this.setCookie('sk', csrfTokenResponse.sk, {"max-age": csrfTokenResponse["max-age-seconds"]});
       console.log('got new token, set token ' + document.cookie);
       return csrfTokenResponse.sk;
@@ -310,7 +311,7 @@ class ApiClient {
   }
 
   setCookie(name: string, value: string, options: CookieOptions = {}) {
-
+    console.log('setCookie')
     options = {
       path: '/',
       ...options
@@ -321,7 +322,7 @@ class ApiClient {
     }
 
     let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
-
+    console.log('updatedCookie')
     for (let optionKey in options) {
       updatedCookie += "; " + optionKey;
       let optionValue = options[optionKey];
@@ -329,7 +330,7 @@ class ApiClient {
         updatedCookie += "=" + optionValue;
       }
     }
-
+console.log('updating cookie')
     document.cookie = updatedCookie;
   }
 }
