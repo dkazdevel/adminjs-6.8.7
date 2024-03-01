@@ -128,12 +128,15 @@ class ApiClient {
 
   private csrfClient: AxiosInstance
 
+  private isCsrfMode: boolean;
+
   constructor() {
     this.baseURL = ApiClient.getBaseUrl()
     this.client = axios.create({
       baseURL: this.baseURL,
     })
     this.csrfClient = axios.create({ baseURL: '/csrf_token' })
+    this.isCsrfMode = /true/i.test(process.env.IS_CSRF_MODE || 'true')
   }
 
   static getBaseUrl(): string {
@@ -178,7 +181,7 @@ class ApiClient {
     const { resourceId, actionName, data, query, ...axiosParams } = options
     let url = `/api/resources/${resourceId}/actions/${actionName}`
     const method = data ? 'POST' : 'GET'
-    if (method === 'POST') {
+    if (this.isCsrfMode && method === 'POST') {
       const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
@@ -208,7 +211,7 @@ class ApiClient {
   async recordAction(options: RecordActionAPIParams): Promise<AxiosResponse<RecordActionResponse>> {
     const { resourceId, recordId, actionName, data, ...axiosParams } = options
     const method = data ? 'POST' : 'GET'
-    if (method === 'POST') {
+    if (this.isCsrfMode && method === 'POST') {
       const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
@@ -234,7 +237,8 @@ class ApiClient {
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
     const method = axiosParams.method || data ? 'POST' : 'GET'
-    if (method.toUpperCase() === 'POST') {
+    console.log('this.isCsrfMode ' + this.isCsrfMode)
+    if (this.isCsrfMode && method.toUpperCase() === 'POST') {
       const csrfToken: string = (await this.getToken())
       axiosParams.headers = {
         ...axiosParams.headers,
@@ -287,16 +291,13 @@ class ApiClient {
 
   async getToken(): Promise<string> {
     const tokenFromCookie = this.getCookie('sk');
-    console.log('tokenFromCookie ' + tokenFromCookie);
     if (tokenFromCookie) return tokenFromCookie
 
     try {
       const response = await this.csrfClient.get('')
 
       const csrfTokenResponse: CsrfTokenInterface = response.data;
-      console.log('csrfTokenResponse ' + csrfTokenResponse);
       this.setCookie('sk', csrfTokenResponse.sk, {"max-age": csrfTokenResponse["max-age-seconds"]});
-      console.log('got new token, set token ' + document.cookie);
       return csrfTokenResponse.sk;
     } catch (error) {
       throw new Error(`CSRF token error: ${error}`)
@@ -311,7 +312,6 @@ class ApiClient {
   }
 
   setCookie(name: string, value: string, options: CookieOptions = {}) {
-    console.log('setCookie')
     options = {
       path: '/',
       ...options
@@ -322,7 +322,6 @@ class ApiClient {
     }
 
     let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
-    console.log('updatedCookie')
     for (let optionKey in options) {
       updatedCookie += "; " + optionKey;
       let optionValue = options[optionKey];
@@ -330,7 +329,7 @@ class ApiClient {
         updatedCookie += "=" + optionValue;
       }
     }
-console.log('updating cookie')
+
     document.cookie = updatedCookie;
   }
 }
