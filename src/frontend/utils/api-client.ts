@@ -1,4 +1,4 @@
-import axios, {AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse} from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import {
   ActionParams,
   BulkActionParams,
@@ -7,9 +7,9 @@ import {
 } from '../../backend/utils/view-helpers/view-helpers'
 
 /* eslint-disable no-alert */
-import {RecordJSON} from '../interfaces'
-import {ActionResponse, BulkActionResponse, RecordActionResponse} from '../../backend/actions/action.interface'
-import {CsrfTokenInterface} from "../interfaces/csrf-token.interface";
+import { RecordJSON } from '../interfaces'
+import { ActionResponse, BulkActionResponse, RecordActionResponse } from '../../backend/actions/action.interface'
+import { CsrfTokenInterface } from '../interfaces/csrf-token.interface'
 
 let globalAny: any = {}
 
@@ -120,11 +120,14 @@ class ApiClient {
 
   private client: AxiosInstance
 
+  private csrfClient: AxiosInstance
+
   constructor() {
     this.baseURL = ApiClient.getBaseUrl()
     this.client = axios.create({
       baseURL: this.baseURL,
     })
+    this.csrfClient = axios.create({ baseURL: '/csrf_token' })
   }
 
   static getBaseUrl(): string {
@@ -168,13 +171,13 @@ class ApiClient {
   async resourceAction(options: ResourceActionAPIParams): Promise<AxiosResponse<ActionResponse>> {
     const { resourceId, actionName, data, query, ...axiosParams } = options
     let url = `/api/resources/${resourceId}/actions/${actionName}`
-    const method =  data ? 'POST' : 'GET'
+    const method = data ? 'POST' : 'GET'
     if (method === 'POST') {
-      const csrfToken: CsrfTokenInterface  = (await this.getToken());
+      const csrfToken: CsrfTokenInterface = (await this.getToken())
       axiosParams.headers = {
-        ... axiosParams.headers,
-        ['X-Csrf-Token']: csrfToken.sk
-      };
+        ...axiosParams.headers,
+        'X-Csrf-Token': csrfToken.sk,
+      }
     }
     if (query) {
       const q = encodeURIComponent(query)
@@ -198,13 +201,13 @@ class ApiClient {
    */
   async recordAction(options: RecordActionAPIParams): Promise<AxiosResponse<RecordActionResponse>> {
     const { resourceId, recordId, actionName, data, ...axiosParams } = options
-    const method =  data ? 'POST' : 'GET'
+    const method = data ? 'POST' : 'GET'
     if (method === 'POST') {
-      const csrfToken: CsrfTokenInterface = (await this.getToken());
+      const csrfToken: CsrfTokenInterface = (await this.getToken())
       axiosParams.headers = {
-        ... axiosParams.headers,
-        ['X-Csrf-Token']: csrfToken.sk
-      };
+        ...axiosParams.headers,
+        'X-Csrf-Token': csrfToken.sk,
+      }
     }
     const response = await this.client.request({
       url: `/api/resources/${resourceId}/records/${recordId}/${actionName}`,
@@ -224,13 +227,13 @@ class ApiClient {
    */
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
-    const method =  axiosParams.method || data ? 'POST' : 'GET'
+    const method = axiosParams.method || data ? 'POST' : 'GET'
     if (method.toUpperCase() === 'POST') {
-      const csrfToken: CsrfTokenInterface = (await this.getToken());
+      const csrfToken: CsrfTokenInterface = (await this.getToken())
       axiosParams.headers = {
-        ... axiosParams.headers,
-        ['X-Csrf-Token']: csrfToken.sk
-      };
+        ...axiosParams.headers,
+        'X-Csrf-Token': csrfToken.sk,
+      }
     }
     const params = new URLSearchParams()
     params.set('recordIds', (recordIds || []).join(','))
@@ -278,9 +281,7 @@ class ApiClient {
 
   async getToken(): Promise<CsrfTokenInterface> {
     try {
-      const response = await axios.request({
-        url: `/csrf_token`,
-      })
+      const response = await this.csrfClient.get('')
 
       return response.data
     } catch (error) {

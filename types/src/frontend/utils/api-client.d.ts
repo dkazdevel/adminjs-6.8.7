@@ -2,7 +2,7 @@ import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ActionParams, BulkActionParams, RecordActionParams, ResourceActionParams } from '../../backend/utils/view-helpers/view-helpers';
 import { RecordJSON } from '../interfaces';
 import { ActionResponse, BulkActionResponse, RecordActionResponse } from '../../backend/actions/action.interface';
-import { CsrfTokenInterface } from "../interfaces/csrf-token.interface";
+import { CsrfTokenInterface } from '../interfaces/csrf-token.interface';
 /**
  * Extends {@link AxiosRequestConfig}
  *
@@ -72,6 +72,7 @@ export declare type GetPageAPIParams = AxiosRequestConfig & {
 declare class ApiClient {
     private baseURL;
     private client;
+    private csrfClient;
     constructor();
     static getBaseUrl(): string;
     /**
