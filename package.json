@@ -1,7 +1,7 @@
 {
   "name": "adminjs",
   "version": "6.8.7",
-  "description": "Admin panel for apps written in node.js",
+  "description": "Admin panel for apps written in node.js. CSRF mode",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
