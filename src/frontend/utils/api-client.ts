@@ -278,13 +278,12 @@ class ApiClient {
 
   async getToken(): Promise<CsrfTokenInterface> {
     try {
-      const response = await this.client.request({
+      const response = await axios.request({
         url: `/csrf_token`,
       })
 
       return response.data
     } catch (error) {
-      console.log('blabla-test test test');
       throw new Error(`CSRF token error: ${error}`)
     }
   }
