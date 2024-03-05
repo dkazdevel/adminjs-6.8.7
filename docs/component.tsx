@@ -4,7 +4,9 @@ import { createStore } from 'redux'
 import { Provider } from 'react-redux'
 import { ThemeProvider, StyleSheetManager } from 'styled-components'
 
+// @ts-ignore
 import * as theme from '../../adminjs-design-system/src/theme'
+// @ts-ignore
 import { Box, PortalUtils } from '../../adminjs-design-system/src'
 
 const store = createStore(() => ({}), {})

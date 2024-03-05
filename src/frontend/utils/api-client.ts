@@ -1,14 +1,15 @@
-import axios, { AxiosResponse, AxiosInstance, AxiosRequestConfig } from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import {
-  ResourceActionParams,
+  ActionParams,
   BulkActionParams,
   RecordActionParams,
-  ActionParams,
+  ResourceActionParams,
 } from '../../backend/utils/view-helpers/view-helpers'
 
 /* eslint-disable no-alert */
 import { RecordJSON } from '../interfaces'
-import { RecordActionResponse, ActionResponse, BulkActionResponse } from '../../backend/actions/action.interface'
+import { ActionResponse, BulkActionResponse, RecordActionResponse } from '../../backend/actions/action.interface'
+import { CsrfTokenInterface } from '../interfaces/csrf-token.interface'
 
 let globalAny: any = {}
 
@@ -96,6 +97,12 @@ export type GetPageAPIParams = AxiosRequestConfig & {
   pageName: string;
 }
 
+type CookieOptions = {
+  path?: string;
+  expires?: Date | string;
+  'max-age'?: number;
+}
+
 /**
  * Client which access the admin API.
  * Use it to fetch data from auto generated AdminJS API.
@@ -119,11 +126,14 @@ class ApiClient {
 
   private client: AxiosInstance
 
+  private csrfClient: AxiosInstance
+
   constructor() {
     this.baseURL = ApiClient.getBaseUrl()
     this.client = axios.create({
       baseURL: this.baseURL,
     })
+    this.csrfClient = axios.create({ baseURL: '/csrf_token' })
   }
 
   static getBaseUrl(): string {
@@ -167,13 +177,21 @@ class ApiClient {
   async resourceAction(options: ResourceActionAPIParams): Promise<AxiosResponse<ActionResponse>> {
     const { resourceId, actionName, data, query, ...axiosParams } = options
     let url = `/api/resources/${resourceId}/actions/${actionName}`
+    const method = data ? 'POST' : 'GET'
+    if (method === 'POST') {
+      const csrfToken: string = (await this.getToken())
+      axiosParams.headers = {
+        ...axiosParams.headers,
+        'X-Csrf-Token': csrfToken,
+      }
+    }
     if (query) {
       const q = encodeURIComponent(query)
       url = [url, q].join('/')
     }
     const response = await this.client.request({
       url,
-      method: data ? 'POST' : 'GET',
+      method,
       ...axiosParams,
       data,
     })
@@ -189,9 +207,17 @@ class ApiClient {
    */
   async recordAction(options: RecordActionAPIParams): Promise<AxiosResponse<RecordActionResponse>> {
     const { resourceId, recordId, actionName, data, ...axiosParams } = options
+    const method = data ? 'POST' : 'GET'
+    if (method === 'POST') {
+      const csrfToken: string = (await this.getToken())
+      axiosParams.headers = {
+        ...axiosParams.headers,
+        'X-Csrf-Token': csrfToken,
+      }
+    }
     const response = await this.client.request({
       url: `/api/resources/${resourceId}/records/${recordId}/${actionName}`,
-      method: data ? 'POST' : 'GET',
+      method,
       ...axiosParams,
       data,
     })
@@ -207,13 +233,21 @@ class ApiClient {
    */
   async bulkAction(options: BulkActionAPIParams): Promise<AxiosResponse<BulkActionResponse>> {
     const { resourceId, recordIds, actionName, data, ...axiosParams } = options
+    const method = axiosParams.method || data ? 'POST' : 'GET'
 
+    if (method.toUpperCase() === 'POST') {
+      const csrfToken: string = (await this.getToken())
+      axiosParams.headers = {
+        ...axiosParams.headers,
+        'X-Csrf-Token': csrfToken,
+      }
+    }
     const params = new URLSearchParams()
     params.set('recordIds', (recordIds || []).join(','))
 
     const response = await this.client.request({
       url: `/api/resources/${resourceId}/bulk/${actionName}`,
-      method: data ? 'POST' : 'GET',
+      method,
       ...axiosParams,
       data,
       params,
@@ -250,6 +284,50 @@ class ApiClient {
     })
     checkResponse(response)
     return response
+  }
+
+  async getToken(): Promise<string> {
+    const tokenFromCookie = this.getCookie('sk')
+    if (tokenFromCookie) return tokenFromCookie
+
+    try {
+      const response = await this.csrfClient.get('')
+
+      const csrfTokenResponse: CsrfTokenInterface = response.data
+      this.setCookie('sk', csrfTokenResponse.sk, { 'max-age': csrfTokenResponse['max-age-seconds'] })
+      return csrfTokenResponse.sk
+    } catch (error) {
+      throw new Error(`CSRF token error: ${error}`)
+    }
+  }
+
+  getCookie(name: string): string | undefined {
+    const matches = document.cookie.match(new RegExp(
+      `(?:^|; )${name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1')}=([^;]*)`,
+    ))
+    return matches ? decodeURIComponent(matches[1]) : undefined
+  }
+
+  setCookie(name: string, value: string, options: CookieOptions = {}) {
+    options = {
+      path: '/',
+      ...options,
+    }
+
+    if (options.expires instanceof Date) {
+      options.expires = options.expires.toUTCString()
+    }
+
+    let updatedCookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`
+    for (const optionKey in options) {
+      updatedCookie += `; ${optionKey}`
+      const optionValue = options[optionKey]
+      if (optionValue !== true) {
+        updatedCookie += `=${optionValue}`
+      }
+    }
+
+    document.cookie = updatedCookie
   }
 }
 

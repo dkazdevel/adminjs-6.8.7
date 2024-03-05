@@ -55,7 +55,8 @@ export const ListAction: Action<ListActionResponse> = {
     }
 
     const filter = await new Filter(filters, resource).populate(context)
-
+    console.log(resource.id() + ' filter ' + JSON.stringify(filter, null, 4))
+    console.log(resource.id() + ' context ' + context)
     const { currentAdmin } = context
     const records = await resource.find(filter, {
       limit: perPage,

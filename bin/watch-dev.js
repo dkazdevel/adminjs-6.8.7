@@ -18,7 +18,7 @@ async function build() {
     input: `${__dirname}/../src/frontend/bundle-entry.jsx`,
     file: `${__dirname}/../src/frontend/assets/scripts/app-bundle.${env}.js`,
     minify: env === 'production',
-    watch: !once,
+    watch: false,
     babelConfig: {
       plugins: [runtime, styled],
       babelHelpers: 'runtime',
